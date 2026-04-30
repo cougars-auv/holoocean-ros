@@ -12,6 +12,9 @@ int32 from_beacon
 # To Beacon ID
 int32 to_beacon
 
+# payload
+uint8[] msg_data
+
 # Azimuth in radians
 float32 azimuth
 

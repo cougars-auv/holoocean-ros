@@ -534,21 +534,24 @@ class AcousticBeaconEncoder(SensorPublisher):
     def encode(self, sensor_data):
         msg = self.message_type()
 
+        msg.header.frame_id = self.socket
+
         msg.msg_type = sensor_data[0] # type: OWAY, OWAYU, MSG_REQ, etc.
         msg.from_beacon = sensor_data[1]
-        msg.msg_data = sensor_data[2]
+        msg.to_beacon = self.beacon_id
+        msg.msg_data = sensor_data[2] if sensor_data[2] is not None else []
 
         if len(sensor_data)>3:
-            msg.azimuth = sensor_data[3]
-            msg.elevation = sensor_data[4]
+            msg.azimuth = float(sensor_data[3])
+            msg.elevation = float(sensor_data[4])
             match msg.msg_type:
                 case "MSG_RESPU":
-                    msg.range = sensor_data[5]
+                    msg.range = float(sensor_data[5])
                 case "MSG_REQX":
-                    msg.depth = sensor_data[5]
+                    msg.z = float(sensor_data[5])
                 case "MSG_RESPX":
-                    msg.range = sensor_data[5]
-                    msg.depth = sensor_data[6]
+                    msg.range = float(sensor_data[5])
+                    msg.z = float(sensor_data[6])
 
         return msg
 
