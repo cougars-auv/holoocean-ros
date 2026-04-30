@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from sensor_msgs.msg import Imu, Image, MagneticField, LaserScan, PointCloud2
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Vector3Stamped, PoseWithCovarianceStamped, TwistWithCovarianceStamped
-from holoocean_interfaces.msg import DVLSensorRange, AgentCommand
+from holoocean_interfaces.msg import DVLSensorRange, AgentCommand, AcousticBeaconSensor
 from scipy.spatial.transform import Rotation
 import numpy as np
 
@@ -519,6 +519,40 @@ class LaserScanEncoder(SensorPublisher):
 
         return msg
 
+class AcousticBeaconEncoder(SensorPublisher):
+    def __init__(self, sensor_dict):
+        super().__init__(sensor_dict)
+        self.message_type = AcousticBeaconSensor
+        if self.config is not None:
+            if "id" in self.config:
+                self.beacon_id = self.config["id"]
+            else:
+                self.beacon_id = 0
+                # note: HoloOcean auto-increments beacon_id
+                # but don't know what order. Just default to zero here.
+
+    def encode(self, sensor_data):
+        msg = self.message_type()
+
+        msg.msg_type = sensor_data[0] # type: OWAY, OWAYU, MSG_REQ, etc.
+        msg.from_beacon = sensor_data[1]
+        msg.msg_data = sensor_data[2]
+
+        if len(sensor_data)>3:
+            msg.azimuth = sensor_data[3]
+            msg.elevation = sensor_data[4]
+            match msg.msg_type:
+                case "MSG_RESPU":
+                    msg.range = sensor_data[5]
+                case "MSG_REQX":
+                    msg.depth = sensor_data[5]
+                case "MSG_RESPX":
+                    msg.range = sensor_data[5]
+                    msg.depth = sensor_data[6]
+
+        return msg
+
+
 # Define other encoders similarly...
 
 
@@ -541,5 +575,6 @@ encoders = {
     'CameraSensor': ImageEncoder,
     'RangeFinderSensor': LaserScanEncoder,
     'PoseSensor': PoseSensorEncoder,
+    'AcousticBeaconSensor': AcousticBeaconEncoder
     # Add other sensor type encoders here...
 }
